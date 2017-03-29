@@ -1,15 +1,24 @@
+from os import environ
+
 from flask import Flask
 import sqlalchemy
 import time
 import logging
-
-connection_string = "postgres+psycopg2://superfit:Sm4llBlu3F1sh@db:5432/macrotracker"
 
 app = Flask(__name__)
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
+
+
+connection_info = {
+    "user": environ["POSTGRES_USER"],
+    "password": environ["POSTGRES_PASSWORD"],
+    "db": environ["POSTGRES_DB"]
+}
+
+connection_string = "postgres+psycopg2://{user}:{password}@db:5432/{db}".format(**connection_info)
 
 db = None
 engine = None
@@ -27,16 +36,11 @@ while True:
     else:
         logger.info("Database connection established.")
         break
-        
+
 
 @app.route("/", methods=["POST", "GET"])
 def default():
-    return "Welcome to the Macro Tracker backend API."
-
-@app.route("/test", methods=["GET"])
-def test():
-    result = engine.execute("SELECT 1")
-    return "result {}".format(result.rowcount)
+    return "Welcome to the Macro Tracker API."
 
 
 if __name__ == "__main__":

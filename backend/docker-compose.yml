@@ -8,14 +8,10 @@ services:
       - .:/src
     depends_on:
       - db
-    environment:
-      - PYTHONUNBUFFERED=0
+    env_file: .env
   db:
     restart: always
     image: postgres:9.6.2
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=superfit
-      - POSTGRES_PASSWORD=Sm4llBlu3F1sh
-      - POSTGRES_DB=macrotracker
+    env_file: .env
