@@ -9,7 +9,10 @@ app = Flask(__name__)
 
 logger = logging.getLogger("api")
 logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())
+logger_handler = logging.StreamHandler()
+logger_handler.setLevel(logging.INFO)
+logger_handler.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
+logger.addHandler(logger_handler)
 
 
 connection_info = {
@@ -31,7 +34,7 @@ while True:
         engine = db.connect()
         meta = sqlalchemy.MetaData(engine)
     except Exception as e:
-        logger.info("Retrying database connection...")
+        logger.warning("Retrying database connection...")
         time.sleep(5)
     else:
         logger.info("Database connection established.")
