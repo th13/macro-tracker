@@ -1,0 +1,21 @@
+version: "3"
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/src
+    depends_on:
+      - db
+    environment:
+      - PYTHONUNBUFFERED=0
+  db:
+    restart: always
+    image: postgres:9.6.2
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=superfit
+      - POSTGRES_PASSWORD=Sm4llBlu3F1sh
+      - POSTGRES_DB=macrotracker
