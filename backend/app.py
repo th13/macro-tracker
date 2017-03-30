@@ -1,9 +1,12 @@
 from os import environ
 
-from flask import Flask
+from flask import Flask, request, jsonify
+from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 import time
 import logging
+
+from models import *
 
 app = Flask(__name__)
 
@@ -26,6 +29,7 @@ connection_string = "postgres+psycopg2://{user}:{password}@db:5432/{db}".format(
 db = None
 engine = None
 meta = None
+SessionFactory = None
 
 # Attempt to connect to the database.
 while True:
@@ -38,6 +42,10 @@ while True:
         time.sleep(5)
     else:
         logger.info("Database connection established.")
+
+        # Create tables if necessary
+        base.Base.metadata.create_all(engine)
+        SessionFactory = sessionmaker(engine)
         break
 
 
@@ -45,6 +53,21 @@ while True:
 def default():
     return "Welcome to the Macro Tracker API."
 
+@app.route("/user", methods=["POST"])
+def create_user():
+    formName = request.form["name"]
+    formEmail = request.form["email"]
+    session = SessionFactory()
+    u = user.User(name=formName, email=formEmail)
+    session.add(u)
+    session.commit()
+    return jsonify(u.serialize())
+
+@app.errorhandler(Exception)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0")
