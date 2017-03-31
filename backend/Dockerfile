@@ -1,7 +1,8 @@
 FROM python:3.6
 
-ADD . /src
-WORKDIR /src
+RUN mkdir /code
+ADD . /code
+WORKDIR /code
 RUN pip install -r requirements.txt
 
 EXPOSE 5000

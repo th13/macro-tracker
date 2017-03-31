@@ -1,15 +1,17 @@
 from os import environ
-
-from flask import Flask, request, jsonify
-from sqlalchemy.orm import sessionmaker
-import sqlalchemy
 import time
 import logging
 
-from models import *
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+
+# TODO: Refactor code into multiple files.
+# from models import *
 
 app = Flask(__name__)
 
+# TODO: Figure out why the provided logger in Flask doesn't output on Docker
+# container.
 logger = logging.getLogger("api")
 logger.setLevel(logging.INFO)
 logger_handler = logging.StreamHandler()
@@ -24,28 +26,34 @@ connection_info = {
     "db": environ["POSTGRES_DB"]
 }
 
-connection_string = "postgres+psycopg2://{user}:{password}@db:5432/{db}".format(**connection_info)
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgres+psycopg2://{user}:{password}@db:5432/{db}".format(**connection_info)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
 
-db = None
-engine = None
-meta = None
-SessionFactory = None
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Text)
+    email = db.Column(db.Text)
 
-# Attempt to connect to the database.
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email
+
+    def serialize(self):
+        return {
+            "name": self.name,
+            "email": self.email
+            }
+
+# Attempt to connect to the database and create tables.
 while True:
     try:
-        db = sqlalchemy.create_engine(connection_string)
-        engine = db.connect()
-        meta = sqlalchemy.MetaData(engine)
+        db.create_all()
     except Exception as e:
         logger.warning("Retrying database connection...")
-        time.sleep(5)
+        time.sleep(3)
     else:
         logger.info("Database connection established.")
-
-        # Create tables if necessary
-        base.Base.metadata.create_all(engine)
-        SessionFactory = sessionmaker(engine)
         break
 
 
@@ -57,10 +65,9 @@ def default():
 def create_user():
     formName = request.form["name"]
     formEmail = request.form["email"]
-    session = SessionFactory()
-    u = user.User(name=formName, email=formEmail)
-    session.add(u)
-    session.commit()
+    u = User(formName, formEmail)
+    db.session.add(u)
+    db.session.commit()
     return jsonify(u.serialize())
 
 @app.errorhandler(Exception)
